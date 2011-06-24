@@ -128,11 +128,25 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            System.out.println("Request received");
-            InputStream is = exchange.getRequestBody();
-            byte[] request = new byte[is.available()];
-            System.out.println("Read " + is.read(request) + " bytes....");
-            JSONArray results = new JSONArray(myResults);
+            System.out.println("Request received!");
+            JSONArray results;
+            int desiredResult = Integer.parseInt(exchange.getRequestURI()
+                    .getQuery().split("=")[1]);
+
+            synchronized (myResults) {
+                while (myResults.size() <= desiredResult && myStatus) {
+                    try {
+                        System.out.println("Waiting....");
+                        myResults.wait();
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+                results = new JSONArray(myResults.subList(desiredResult,
+                        myResults.size()));
+            }
+
+            System.out.println("Sent " + results.length() + "results");
             byte[] b = results.toString().getBytes();
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_ACCEPTED,
                     b.length);
