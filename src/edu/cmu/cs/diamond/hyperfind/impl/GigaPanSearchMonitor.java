@@ -43,6 +43,7 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
         try {
             int port = 8080;
             myServer = HttpServer.create(new InetSocketAddress(port), 0);
+            myServer = HttpServer.create(new InetSocketAddress(0), 0);
             myServer.createContext("/", new IndexHandler());
             myServer.createContext("/gigapanID", new GigaPanInfoHandler());
             myServer.createContext("/results", new CallbackHandler());
@@ -50,6 +51,7 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
 
             // start server
             myServer.start();
+            int port = myServer.getAddress().getPort();
             System.out.println("Server is listening on port: " + port);
 
             // launch browser
