@@ -3,30 +3,28 @@ $(function() {
     var DEFAULT_ZOOM_LEVEL = 3;
     var gigapan_info;
     var pin_image = new Image();
-    var context = document.getElementById("gigapan").getContext("2d");
+    var context;
 
     $.getJSON('/gigapanID', function(data) {
 	gigapan_info = data;
 	if (gigapan_info != null) {
-	    //create_canvas();
+	    create_canvas();
 	    var images = create_images();
 	    pin_image.src = 'http://duke.edu/~tmn7/Resources/pin.png';
-	    $(pin_image).load(function(ev) {
-		poll_for_results();
-	    });
 	}
     });
     
     function poll_for_results () {
 	$.ajax({
-	    type: 'POST',
+	    type: 'GET',
 	    url: "/results",
-	    data: ({resultNum : currentIndex}),
+	    data: {resultNum : currentIndex},
 	    dataType: ($.browser.msie) ? "text" : "json",
 	    success: function (data) {
 		for (i = 0; i < data.length; i++) {
 		    var coords = get_draw_coords(data[i]);
 		    context.drawImage(pin_image, coords[0], coords[1]);
+		    currentIndex += 1;
 		}
 		return poll_for_results();
 	    }
@@ -35,19 +33,24 @@ $(function() {
 
     function create_canvas () {
 	desired_zoom_level = (gigapan_info.levels - 1) - DEFAULT_ZOOM_LEVEL;
-	height_at_zoom_level = gigapan_info.height / (Math.pow(2, desired_zoom_level));
-	width_at_zoom_level = gigapan_info.width / (Math.pow(2, desired_zoom_level));
-	var canvas = new Canvas('gigapan', {
-	    'injectInto':'canvas_holder',
-	    'width':width_at_zoom_level,
-	    'height':height_at_zoom_level
-	});
-	context = canvas.getContext("2d");
+	height_at_zoom_level = gigapan_info.height 
+	    / (Math.pow(2, desired_zoom_level));
+	width_at_zoom_level = gigapan_info.width 
+	    / (Math.pow(2, desired_zoom_level));
+	var canvas = $("<canvas>", {width:width_at_zoom_level
+				    , height:height_at_zoom_level, id: "draw"});
+	$("#content").append(canvas);
+	var ctx = canvas[0];
+	ctx.width = width_at_zoom_level; 
+	ctx.height = height_at_zoom_level;
+	context = ctx.getContext('2d');
     }
     function create_images () {
 	desired_zoom_level = (gigapan_info.levels - 1) - DEFAULT_ZOOM_LEVEL;
-	height_at_zoom_level = gigapan_info.height / (Math.pow(2, desired_zoom_level));
-	width_at_zoom_level = gigapan_info.width / (Math.pow(2, desired_zoom_level));	
+	height_at_zoom_level = gigapan_info.height 
+	    / (Math.pow(2, desired_zoom_level));
+	width_at_zoom_level = gigapan_info.width 
+	    / (Math.pow(2, desired_zoom_level));	
 	blocks_high = Math.ceil(height_at_zoom_level / 256);
 	blocks_wide = Math.ceil(width_at_zoom_level / 256);
 	var images = new Array(blocks_high);
@@ -64,8 +67,6 @@ $(function() {
 			&& ev.data.myI === ev.data.maxI) {
 			return poll_for_results();
 		    }
-		$(img).load({myI: i, myJ: j}, function(ev) {
-		    context.drawImage(ev.target, ev.data.myJ * 256, ev.data.myI * 256);
 		});
 	    }
 	}
@@ -75,7 +76,8 @@ $(function() {
     function get_tile_url (row, column, level) {
 	var GC_TILE = ['0', '1', '2', '3'];
 	var fn = 'r';
-	var path = 'http://share.gigapan.org/gigapans0/' + gigapan_info.id + '/tiles';
+	var path = 'http://share.gigapan.org/gigapans0/' 
+	    + gigapan_info.id + '/tiles';
 	for (var i = level - 1; i > -1; i--) {
 	    var bit = 1 << i;
 	    var index = 0;
@@ -107,8 +109,10 @@ $(function() {
 
     function get_draw_coords (object) {
 	actual_object_zoom = (gigapan_info.levels - 1) - object.level;
-	height_at_zoom_level = gigapan_info.height / (Math.pow(2, actual_object_zoom));
-	width_at_zoom_level = gigapan_info.width / (Math.pow(2, actual_object_zoom));
+	height_at_zoom_level = gigapan_info.height 
+	    / (Math.pow(2, actual_object_zoom));
+	width_at_zoom_level = gigapan_info.width 
+	    / (Math.pow(2, actual_object_zoom));
 	
 	mid_x_coord = (256 * object.col) + 128;
 	mid_y_coord = (256 * object.row) + 128;
@@ -116,10 +120,14 @@ $(function() {
 	percentY = mid_y_coord / height_at_zoom_level;
 	
 	desired_zoom_level = (gigapan_info.levels - 1) - 3;
-	height_at_desired_zoom = gigapan_info.height / (Math.pow(2, desired_zoom_level));
-	width_at_desired_zoom = gigapan_info.width / (Math.pow(2, desired_zoom_level));
-	return_coord_x = Math.min((percentX * width_at_desired_zoom) - 20, width_at_desired_zoom);
-	return_coord_y = Math.min((percentY * height_at_desired_zoom) - 34, height_at_desired_zoom);
+	height_at_desired_zoom = gigapan_info.height 
+	    / (Math.pow(2, desired_zoom_level));
+	width_at_desired_zoom = gigapan_info.width 
+	    / (Math.pow(2, desired_zoom_level));
+	return_coord_x = Math.min((percentX * width_at_desired_zoom - 10), 
+				  width_at_desired_zoom - 10);
+	return_coord_y = Math.min((percentY * height_at_desired_zoom - 34), 
+				  height_at_desired_zoom - 34);
 	
 	return new Array(return_coord_x, return_coord_y);
     }
