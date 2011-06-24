@@ -1,12 +1,9 @@
 package edu.cmu.cs.diamond.hyperfind.impl;
 
-import java.awt.Desktop;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -39,10 +36,24 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
         myFilters = filters;
         myStatus = true;
         myResults = new Vector<JSONObject>();
+    }
 
+    @Override
+    public final void notify(Result r) {
+        synchronized (myResults) {
+            if (myGigaPan == null) {
+                myGigaPan = createGigaPanInfo(r);
+                createWebComponent();
+            }
+            myResults.add(createResultObject(r));
+            myResults.notifyAll();
+        }
+
+    }
+
+    private final void createWebComponent() {
         try {
-            int port = 8080;
-            myServer = HttpServer.create(new InetSocketAddress(port), 0);
+            // create server
             myServer = HttpServer.create(new InetSocketAddress(0), 0);
             myServer.createContext("/", new IndexHandler());
             myServer.createContext("/gigapanID", new GigaPanInfoHandler());
@@ -55,32 +66,26 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
             System.out.println("Server is listening on port: " + port);
 
             // launch browser
-            // Desktop.getDesktop().browse(new URI("http://www.google.com"));
-        } catch (IOException e) {
+            Runtime r = Runtime.getRuntime();
+            r.exec("xdg-open http://127.0.0.1:" + port);
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     @Override
-    public void notify(Result r) {
+    public final void stopped() {
         synchronized (myResults) {
-            if (myGigaPan == null) {
-                myGigaPan = createGigaPanInfo(r);
-                myResults.add(createResultObject(r));
-            } else {
-                myResults.add(createResultObject(r));
-            }
+            myStatus = false;
+            myGigaPan = null;
+            myServer.stop(0);
+            myResults.notifyAll();
+            System.out.println("Server stopped");
         }
     }
 
-    @Override
-    public void stopped() {
-        myStatus = false;
-        myServer.stop(0);
-        System.out.println("Server stopped");
-    }
-
-    public static HyperFindSearchMonitor createSearchMonitor(
+    public static final HyperFindSearchMonitor createSearchMonitor(
             List<Filter> filters) {
         return new GigaPanSearchMonitor(filters);
     }
@@ -99,13 +104,6 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
         } catch (JSONException e) {
             return new JSONObject();
         }
-    }
-
-    private static final int getEmptyPort() throws IOException {
-        ServerSocket s = new ServerSocket(0);
-        int ret = s.getLocalPort();
-        s.close();
-        return ret;
     }
 
     private static final JSONObject createResultObject(Result r) {
@@ -161,7 +159,6 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            System.out.println("Request recieved....");
             byte[] b = myGigaPan.toString().getBytes();
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_ACCEPTED,
                     b.length);
