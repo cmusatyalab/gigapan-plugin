@@ -9,6 +9,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -17,38 +19,37 @@ import org.json.JSONObject;
 import com.sun.net.httpserver.*;
 
 import edu.cmu.cs.diamond.hyperfind.HyperFindSearchMonitor;
-import edu.cmu.cs.diamond.opendiamond.Filter;
+import edu.cmu.cs.diamond.hyperfind.HyperFindResult;
 import edu.cmu.cs.diamond.opendiamond.Result;
 import edu.cmu.cs.diamond.opendiamond.Util;
 
 public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
 
-    private List<Filter> myFilters;
-    private boolean myStatus = false;
-    private HttpServer myServer;
+    private boolean isRunning = false;
+    private HttpServer myServer = null;
     private JSONObject myGigaPan;
-    private Vector<JSONObject> myResults;
+    private Vector<HyperFindResult> myResults;
+    private ExecutorService myThreadPool;
     private static final String[] myPushAttributes = { "gigapan_height",
             "gigapan_width", "gigapan_levels", "gigapan_id", "tile_level",
             "tile_col", "tile_row" };
 
-    private GigaPanSearchMonitor(List<Filter> filters) {
-        myFilters = filters;
-        myStatus = true;
-        myResults = new Vector<JSONObject>();
+    private GigaPanSearchMonitor() {
+        myResults = new Vector<HyperFindResult>();
     }
 
     @Override
-    public final void notify(Result r) {
+    public final void notify(HyperFindResult hr) {
         synchronized (myResults) {
-            if (myGigaPan == null) {
-                myGigaPan = createGigaPanInfo(r);
+            if (!isRunning && hr.getResult().getValue("gigapan_id") != null) {
+                isRunning = true;
+                myGigaPan = createGigaPanInfo(hr);
+                myThreadPool = Executors.newCachedThreadPool();
                 createWebComponent();
             }
-            myResults.add(createResultObject(r));
+            myResults.add(hr);
             myResults.notifyAll();
         }
-
     }
 
     private final void createWebComponent() {
@@ -59,12 +60,11 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
             myServer.createContext("/gigapanID", new GigaPanInfoHandler());
             myServer.createContext("/results", new CallbackHandler());
             myServer.createContext("/display", new DisplayHandler());
-            myServer.setExecutor(null);
+            myServer.setExecutor(myThreadPool);
 
             // start server
             myServer.start();
             int port = myServer.getAddress().getPort();
-            System.out.println("Server is listening on port: " + port);
 
             // launch browser
             Runtime r = Runtime.getRuntime();
@@ -78,20 +78,30 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
     @Override
     public final void stopped() {
         synchronized (myResults) {
-            myStatus = false;
-            myGigaPan = null;
-            myServer.stop(0);
-            myResults.notifyAll();
-            System.out.println("Server stopped");
+            if (isRunning) {
+                isRunning = false;
+                myResults.notifyAll();
+                System.out.println("Server stopped");
+            }
         }
     }
 
-    public static final HyperFindSearchMonitor createSearchMonitor(
-            List<Filter> filters) {
-        return new GigaPanSearchMonitor(filters);
+    @Override
+    public final void terminated() {
+        synchronized (myResults) {
+            if (myServer != null) {
+                myThreadPool.shutdownNow();
+                myServer.stop(0);
+            }
+        }
     }
 
-    private static final JSONObject createGigaPanInfo(Result r) {
+    public static final GigaPanSearchMonitor createSearchMonitor() {
+        return new GigaPanSearchMonitor();
+    }
+
+    private static final JSONObject createGigaPanInfo(HyperFindResult hr) {
+        Result r = hr.getResult();
         try {
             JSONObject gigaPan = new JSONObject();
             gigaPan.put("id", Util.extractString(r.getValue("gigapan_id")));
@@ -107,17 +117,27 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
         }
     }
 
-    private static final JSONObject createResultObject(Result r) {
+    private final JSONObject createResultObject(HyperFindResult hr) {
+        Result r = hr.getResult();
         try {
             JSONObject resultJSON = new JSONObject();
             resultJSON.put("level",
                     Util.extractString(r.getValue("tile_level")));
             resultJSON.put("row", Util.extractString(r.getValue("tile_row")));
             resultJSON.put("col", Util.extractString(r.getValue("tile_col")));
+            resultJSON.put("result_id", myResults.indexOf(hr));
             return resultJSON;
         } catch (JSONException e) {
             return new JSONObject();
         }
+    }
+
+    private final Vector<JSONObject> createResultObjectList(List<HyperFindResult> v) {
+        Vector<JSONObject> jv = new Vector<JSONObject>();
+        for (HyperFindResult hr : v) {
+            jv.add(createResultObject(hr));
+        }
+        return jv;
     }
 
     @Override
@@ -129,26 +149,34 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            System.out.println("Request received!");
-            JSONArray results;
+            Vector<JSONObject> results;
             int desiredResult = Integer.parseInt(exchange.getRequestURI()
                     .getQuery().split("=")[1]);
 
             synchronized (myResults) {
-                while (myResults.size() <= desiredResult && myStatus) {
+                while (myResults.size() <= desiredResult && isRunning) {
                     try {
-                        System.out.println("Waiting....");
                         myResults.wait();
                     } catch (InterruptedException e) {
                         break;
                     }
                 }
-                results = new JSONArray(myResults.subList(desiredResult,
-                        myResults.size()));
+                results = createResultObjectList(myResults.subList(
+                        desiredResult, myResults.size()));
             }
 
-            System.out.println("Sent " + results.length() + "results");
-            byte[] b = results.toString().getBytes();
+            try {
+                if (!isRunning) {
+                    System.out.println("Added terminate");
+                    JSONObject terminateObj = new JSONObject();
+                    terminateObj.put("terminate", true);
+                    results.add(terminateObj);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            JSONArray resultsForTransmit = new JSONArray(results);
+            byte[] b = resultsForTransmit.toString().getBytes();
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_ACCEPTED,
                     b.length);
             exchange.getResponseBody().write(b);

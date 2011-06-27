@@ -9,6 +9,6 @@ import edu.cmu.cs.diamond.opendiamond.Filter;
 public class GigaPanSearchMonitorFactory extends HyperFindSearchMonitorFactory {
 
     public HyperFindSearchMonitor createSearchMonitor(List<Filter> filters) {
-        return GigaPanSearchMonitor.createSearchMonitor(filters);
+        return GigaPanSearchMonitor.createSearchMonitor();
     }
 }
