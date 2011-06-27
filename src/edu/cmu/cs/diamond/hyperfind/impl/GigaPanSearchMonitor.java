@@ -58,6 +58,7 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
             myServer.createContext("/", new IndexHandler());
             myServer.createContext("/gigapanID", new GigaPanInfoHandler());
             myServer.createContext("/results", new CallbackHandler());
+            myServer.createContext("/display", new DisplayHandler());
             myServer.setExecutor(null);
 
             // start server
@@ -153,6 +154,20 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
             exchange.getResponseBody().write(b);
             exchange.close();
         }
+    }
+
+    final class DisplayHandler implements HttpHandler {
+
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            byte[] b = Util.readFully(exchange.getRequestBody());
+            String request = new String(b, "UTF-8");
+            int id = Integer.parseInt(request.split("=")[1]);
+            myResults.get(id).popup();
+            exchange.sendResponseHeaders(HttpURLConnection.HTTP_ACCEPTED, 0);
+            exchange.close();
+        }
+
     }
 
     final class GigaPanInfoHandler implements HttpHandler {
