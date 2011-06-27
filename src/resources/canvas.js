@@ -59,10 +59,10 @@ $(function() {
 		images[i] = new Array(blocks_wide);
 		var img = new Image();
 		img.src = get_tile_url(i, j, DEFAULT_ZOOM_LEVEL);
-		$(img).load({myI: i, myJ: j, maxI: blocks_high - 1, 
-			     maxJ: blocks_wide - 1}, function(ev) {
-		    context.drawImage(ev.target, ev.data.myJ * 256, 
-				      ev.data.myI * 256);
+		$(img).load({myI: i, myJ: j, maxI: blocks_high - 1
+			     , maxJ: blocks_wide - 1}, function(ev) {
+		    context.drawImage(ev.target, ev.data.myJ * 256
+				      , ev.data.myI * 256);
 		    if (ev.data.myJ === ev.data.maxJ 
 			&& ev.data.myI === ev.data.maxI) {
 			return poll_for_results();
