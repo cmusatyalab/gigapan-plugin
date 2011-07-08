@@ -138,6 +138,24 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
             jv.add(createResultObject(hr));
         }
         return jv;
+    private static final void addTerminationInstruction(JSONArray result) {
+        try {
+            System.out.println("Added terminate instruction...");
+            JSONObject terminateObj = new JSONObject();
+            terminateObj.put("terminate", true);
+            result.put(result.length(), terminateObj);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static final void sendResponse(HttpExchange exchange,
+            JSONArray response) throws IOException {
+        System.out.println("Sending " + response.length() + " objects...");
+        byte[] b = response.toString().getBytes();
+        exchange.sendResponseHeaders(HttpURLConnection.HTTP_ACCEPTED, b.length);
+        exchange.getResponseBody().write(b);
+        exchange.close();
     }
 
     @Override
