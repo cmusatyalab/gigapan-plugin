@@ -4,9 +4,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
@@ -27,15 +30,19 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
 
     private boolean isRunning = false;
     private HttpServer myServer = null;
-    private JSONObject myGigaPan;
     private Vector<HyperFindResult> myResults;
+    private Map<HyperFindResult, Integer> myResultsReverse;
     private ExecutorService myThreadPool;
+    private Vector<HyperFindResult> myHighlightedResults;
+    private int mySerialNumber = 0;
     private static final String[] myPushAttributes = { "gigapan_height",
             "gigapan_width", "gigapan_levels", "gigapan_id", "tile_level",
             "tile_col", "tile_row" };
 
     private GigaPanSearchMonitor() {
         myResults = new Vector<HyperFindResult>();
+        myResultsReverse = new HashMap<HyperFindResult, Integer>();
+        myHighlightedResults = new Vector<HyperFindResult>();
     }
 
     @Override
@@ -43,10 +50,10 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
         synchronized (myResults) {
             if (!isRunning && hr.getResult().getValue("gigapan_id") != null) {
                 isRunning = true;
-                myGigaPan = createGigaPanInfo(hr);
                 myThreadPool = Executors.newCachedThreadPool();
                 createWebComponent();
             }
+            myResultsReverse.put(hr, myResults.size());
             myResults.add(hr);
             myResults.notifyAll();
         }
@@ -57,8 +64,9 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
             // create server
             myServer = HttpServer.create(new InetSocketAddress(0), 0);
             myServer.createContext("/", new IndexHandler());
-            myServer.createContext("/gigapanID", new GigaPanInfoHandler());
-            myServer.createContext("/results", new CallbackHandler());
+            // long-polling handler for data callbacks
+            myServer.createContext("/data", new DataHandler());
+            // handler for popups
             myServer.createContext("/display", new DisplayHandler());
             myServer.setExecutor(myThreadPool);
 
@@ -76,22 +84,42 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
     }
 
     @Override
-    public final void stopped() {
+    public final void selectionChanged(List<HyperFindResult> selected) {
         synchronized (myResults) {
-            if (isRunning) {
-                isRunning = false;
-                myResults.notifyAll();
-                System.out.println("Server stopped");
-            }
+            myHighlightedResults.removeAllElements();
+            myHighlightedResults.addAll(selected);
+            mySerialNumber++;
+            myResults.notifyAll();
         }
+
+    }
+
+    @Override
+    public final void stopped() {
+        /*
+         * synchronized (myResults) { if (isRunning) { isRunning = false;
+         * myResults.notifyAll(); System.out.println("Server stopped"); } }
+         */
     }
 
     @Override
     public final void terminated() {
         synchronized (myResults) {
             if (myServer != null) {
-                myThreadPool.shutdownNow();
-                myServer.stop(0);
+                isRunning = false;
+                myResults.notifyAll();
+                new Thread() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(5000);
+                            myThreadPool.shutdownNow();
+                            myServer.stop(0);
+                        } catch (InterruptedException e) {
+                            //
+                        }
+                    }
+                }.start();
             }
         }
     }
@@ -100,23 +128,10 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
         return new GigaPanSearchMonitor();
     }
 
-    private static final JSONObject createGigaPanInfo(HyperFindResult hr) {
-        Result r = hr.getResult();
-        try {
-            JSONObject gigaPan = new JSONObject();
-            gigaPan.put("id", Util.extractString(r.getValue("gigapan_id")));
-            gigaPan.put("height",
-                    Util.extractString(r.getValue("gigapan_height")));
-            gigaPan.put("width",
-                    Util.extractString(r.getValue("gigapan_width")));
-            gigaPan.put("levels",
-                    Util.extractString(r.getValue("gigapan_levels")));
-            return gigaPan;
-        } catch (JSONException e) {
-            return new JSONObject();
-        }
-    }
-
+    /*
+     * Return a JSON-encoded object representing the HyperFindResult parameter
+     * that can be found in the specified list of results.
+     */
     private final JSONObject createResultObject(HyperFindResult hr) {
         Result r = hr.getResult();
         try {
@@ -126,18 +141,32 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
             resultJSON.put("row", Util.extractString(r.getValue("tile_row")));
             resultJSON.put("col", Util.extractString(r.getValue("tile_col")));
             resultJSON.put("result_id", myResults.indexOf(hr));
+            resultJSON.put("gigapan_id",
+                    Util.extractString(r.getValue("gigapan_id")));
+            resultJSON.put("gigapan_height",
+                    Util.extractString(r.getValue("gigapan_height")));
+            resultJSON.put("gigapan_width",
+                    Util.extractString(r.getValue("gigapan_width")));
+            resultJSON.put("gigapan_levels",
+                    Util.extractString(r.getValue("gigapan_levels")));
             return resultJSON;
         } catch (JSONException e) {
             return new JSONObject();
         }
     }
 
-    private final Vector<JSONObject> createResultObjectList(List<HyperFindResult> v) {
+    /*
+     * Return a JSON-encoded array of objects representing the HyperFindResult
+     * objects found in the specified list.
+     */
+    private final JSONArray createResultObjectList(List<HyperFindResult> v) {
         Vector<JSONObject> jv = new Vector<JSONObject>();
         for (HyperFindResult hr : v) {
             jv.add(createResultObject(hr));
         }
-        return jv;
+        return new JSONArray(jv);
+    }
+
     private static final void addTerminationInstruction(JSONArray result) {
         try {
             System.out.println("Added terminate instruction...");
@@ -163,16 +192,23 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
         return new HashSet<String>(Arrays.asList(myPushAttributes));
     }
 
-    final class CallbackHandler implements HttpHandler {
+    final class DataHandler implements HttpHandler {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            Vector<JSONObject> results;
-            int desiredResult = Integer.parseInt(exchange.getRequestURI()
-                    .getQuery().split("=")[1]);
-
+            System.out.println("Received result callback request...");
+            JSONArray results;
+            String[] request = exchange.getRequestURI().getQuery().split("&");
+            Map<String, String> query = new HashMap<String, String>();
+            for (String s : request) {
+                String[] st = s.split("=");
+                query.put(st[0], st[1]);
+            }
+            int desiredResult = Integer.parseInt(query.get("desiredResult"));
+            int serialNumber = Integer.parseInt(query.get("serialNumber"));
             synchronized (myResults) {
-                while (myResults.size() <= desiredResult && isRunning) {
+                while (myResults.size() <= desiredResult && isRunning
+                        && serialNumber == mySerialNumber) {
                     try {
                         myResults.wait();
                     } catch (InterruptedException e) {
@@ -181,24 +217,25 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
                 }
                 results = createResultObjectList(myResults.subList(
                         desiredResult, myResults.size()));
+
+                if (serialNumber != mySerialNumber) {
+                    try {
+                        JSONObject highlights = new JSONObject();
+                        highlights.put("highlight",
+                                createResultObjectList(myHighlightedResults));
+                        highlights.put("serial", mySerialNumber);
+                        results.put(results.length(), highlights);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
 
-            try {
-                if (!isRunning) {
-                    System.out.println("Added terminate");
-                    JSONObject terminateObj = new JSONObject();
-                    terminateObj.put("terminate", true);
-                    results.add(terminateObj);
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
+            if (!isRunning) {
+                addTerminationInstruction(results);
             }
-            JSONArray resultsForTransmit = new JSONArray(results);
-            byte[] b = resultsForTransmit.toString().getBytes();
-            exchange.sendResponseHeaders(HttpURLConnection.HTTP_ACCEPTED,
-                    b.length);
-            exchange.getResponseBody().write(b);
-            exchange.close();
+
+            sendResponse(exchange, results);
         }
     }
 
@@ -207,25 +244,14 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             byte[] b = Util.readFully(exchange.getRequestBody());
-            String request = new String(b, "UTF-8");
-            int id = Integer.parseInt(request.split("=")[1]);
-            myResults.get(id).popup();
+            int request = Integer
+                    .parseInt(new String(b, "UTF-8").split("=")[1]);
+            System.out.println("Received request to display " + request);
+            myResults.get(request).popup();
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_ACCEPTED, 0);
             exchange.close();
         }
 
-    }
-
-    final class GigaPanInfoHandler implements HttpHandler {
-
-        @Override
-        public void handle(HttpExchange exchange) throws IOException {
-            byte[] b = myGigaPan.toString().getBytes();
-            exchange.sendResponseHeaders(HttpURLConnection.HTTP_ACCEPTED,
-                    b.length);
-            exchange.getResponseBody().write(b);
-            exchange.close();
-        }
     }
 
     final class IndexHandler implements HttpHandler {
@@ -235,13 +261,13 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
             String req = exchange.getRequestURI().toString();
             if (req.equals("/")) {
                 InputStream is = getClass().getClassLoader()
-                        .getResourceAsStream("resources/index.html");
+                        .getResourceAsStream("resources/multi.html");
                 byte[] b = Util.readFully(is);
                 exchange.sendResponseHeaders(HttpURLConnection.HTTP_ACCEPTED,
                         b.length);
                 exchange.getResponseBody().write(b);
                 exchange.close();
-            } else {
+            } else if (req.contains("resource")) {
                 InputStream is = getClass().getClassLoader()
                         .getResourceAsStream(req.substring(1));
                 byte[] b = Util.readFully(is);
