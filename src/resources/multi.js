@@ -169,9 +169,10 @@ $(function() {
 	var bottom_height = Math.floor(((100 - TOP) / 100) * height);
 
 	$('#top').height(top_height);
-	for (var id in ['#bottom', '#pins', '#image']) {
-	    $(id).height(bottom_height);
-	    $(id).width(width);
+	var ids = ['#bottom', '#pins', '#image'];
+	for (var i = 0; i < ids.length; i++) {
+	    $(ids[i]).height(bottom_height);
+	    $(ids[i]).width(width);
 	}
     }
 
