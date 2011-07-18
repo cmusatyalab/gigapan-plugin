@@ -263,7 +263,7 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
             String req = exchange.getRequestURI().toString();
             if (req.equals("/")) {
                 InputStream is = getClass().getClassLoader()
-                        .getResourceAsStream("resources/multi.html");
+                        .getResourceAsStream("resources/index.html");
                 byte[] b = Util.readFully(is);
                 exchange.sendResponseHeaders(HttpURLConnection.HTTP_ACCEPTED,
                         b.length);
