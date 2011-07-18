@@ -45,9 +45,11 @@ $(function() {
     var HIGHLIGHTED_PINS = [];
     var LAST_RESULT_NUM = 0;
     var SERIAL = 0;
+    // Percentage of window height for top pane
     var TOP = 60;
     var DOCUMENT_WIDTH = 0;
     var DOCUMENT_HEIGHT = 0;
+    // Dimensions of pin image
     var PIN_DIM = [20, 29]
 
     // init methods
@@ -94,11 +96,13 @@ $(function() {
         });
     }
 
+    // Update count of results next to each thumbnail
     function update_count(gigapan_id) {
         var count = RESULTS_MAP[gigapan_id].length;
         $('#' + gigapan_id + '_text').html(count + " results");
     }
 
+    // Draw pin on focused GigaPan
     function draw_pin(result) {
         var coords = get_draw_coords(result);
         var index = $.inArray(result, HIGHLIGHTED_PINS);
@@ -114,11 +118,13 @@ $(function() {
         $("#pins").append(imghtml);
     }
 
+    // Add thumbnail to top pane
     function draw_gigapan(result) {
         var img_div = create_thumbnail(result);
         $("#top").append(img_div);
     }
 
+    // Create object representing a single GigaPan
     function create_gigapan_object(result) {
         var gigapan = new Object();
         gigapan.id = result.gigapan_id;
@@ -128,6 +134,7 @@ $(function() {
         return gigapan;
     }
 
+    // Load the specified GigaPan into the bottom pane
     function focus_gigapan(gigapan_id) {
         var result = RESULTS_MAP[gigapan_id][0];
         CURRENT_GIGAPAN = create_gigapan_object(result);
@@ -139,8 +146,12 @@ $(function() {
             draw_pin(to_draw[i]);
         }
     }
-    
+
+    // Return HTML for displaying GigaPan in bottom pane
     function create_draw_html() {
+        // The GigaPan thumbnail URL ignores the specified height.
+        // Determine what size GigaPan to ask for based on the size of
+        // the bottom pane.
         var max_x = DOCUMENT_WIDTH - PIN_DIM[0];
         var max_y = (((100 - TOP) / 100) * DOCUMENT_HEIGHT) - PIN_DIM[1];
         // assume max_x
@@ -162,16 +173,19 @@ $(function() {
                             CURRENT_GIGAPAN.drawn_height);
     }
 
+    // Return thumbnail height for specified GigaPan given the width
     function y_from_x(gigapan, x) {
         var aspect_ratio = gigapan.width / gigapan.height;
         return Math.floor(x / aspect_ratio);
     }
 
+    // Return thumbnail width for specified GigaPan given the height
     function x_from_y(gigapan, y) {
         var aspect_ratio = gigapan.width / gigapan.height;
         return Math.floor(y * aspect_ratio);
     }
 
+    // Initialize document
     function build_frames() {
         CURRENT_GIGAPAN.id = -1;
 
@@ -199,6 +213,7 @@ $(function() {
         update_frame_sizes();
     }
 
+    // Resize frames in accordance with current window size
     function update_frame_sizes() {
         DOCUMENT_WIDTH = $(window).width() - 25;
         DOCUMENT_HEIGHT = $(window).height() - 100;
@@ -216,8 +231,10 @@ $(function() {
         }
     }
 
+    // Return a div containing a thumbnail for the specified GigaPan
     function create_thumbnail (obj) {
         var width = 700;
+        // GigaPan ignores the height
         var imgurl = "http://www.gigapan.org/gigapans/"
             + obj.gigapan_id + "-" + width + "x200.jpg";
         // create "canvas"
@@ -232,6 +249,7 @@ $(function() {
         return img_div;
     }
 
+    // Return HTML for a pin with the specified parameters
     function get_pin_html(imgurl, id, x_coord, y_coord) {
         var style = "position:absolute; top:" + y_coord + "px;";
         style += " left:" + x_coord + "px;";
@@ -242,6 +260,7 @@ $(function() {
         return img;
     }
 
+    // Return wrapper HTML for an image
     function get_img_html(imgurl, id, width, height) {
         var img = $("<img>", {src:imgurl, width:width, height:height});
 
@@ -253,6 +272,7 @@ $(function() {
         return img;
     }
 
+    // Return the coordinates of a pin representing the given tile
     function get_draw_coords (object) {
         var real_level = (CURRENT_GIGAPAN.levels - 1) - object.level;
         var level_height = CURRENT_GIGAPAN.height /
