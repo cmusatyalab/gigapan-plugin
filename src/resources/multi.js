@@ -160,8 +160,8 @@ $(function() {
     }
 
     function update_frame_sizes() {
-	DOCUMENT_WIDTH = $(document).width() - 25;
-	DOCUMENT_HEIGHT = $(document).height() - 100;
+	DOCUMENT_WIDTH = $(window).width() - 25;
+	DOCUMENT_HEIGHT = $(window).height() - 100;
 
 	var height = DOCUMENT_HEIGHT;
 	var width = DOCUMENT_WIDTH;
