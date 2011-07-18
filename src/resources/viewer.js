@@ -40,7 +40,7 @@
 
 $(function() {
     // state
-    var CURRENT_GIGAPAN = new Object();
+    var CURRENT_GIGAPAN = {id: -1};
     var RESULTS_MAP = new Object();
     var HIGHLIGHTED_PINS = [];
     var LAST_RESULT_NUM = 0;
@@ -53,7 +53,7 @@ $(function() {
     var PIN_DIM = [20, 29]
 
     // init methods
-    build_frames();
+    update_frame_sizes();
     poll();
 
     function poll() {
@@ -182,34 +182,6 @@ $(function() {
     function x_from_y(gigapan, y) {
         var aspect_ratio = gigapan.width / gigapan.height;
         return Math.floor(y * aspect_ratio);
-    }
-
-    // Initialize document
-    function build_frames() {
-        CURRENT_GIGAPAN.id = -1;
-
-        // top part
-        var style = "position: relative;";
-        style += "overflow-x: hidden; overflow-y: scroll;";
-        var top = $("<div/>", {style:style, id:"top"});
-        $("#outer").append(top);
-        $("#outer").append("<br><br>");
-
-        // bottom part
-        var style = "position: relative;";
-        var bottom = $("<div/>", {style:style, id:"bottom"});
-
-        // bottom sub-divs
-        var style = "position: absolute;";
-        var bottom_pin = $("<div/>", {style:style, id:"pins"});
-        style += "overflow: hidden;";
-        var bottom_image = $("<div/>", {style:style, id:"image"});
-        $(bottom).append(bottom_image);
-        $(bottom).append(bottom_pin);
-
-        $("#outer").append(bottom);
-
-        update_frame_sizes();
     }
 
     // Resize frames in accordance with current window size
