@@ -211,7 +211,7 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
 
     private static final void addTerminationInstruction(JSONArray result) {
         try {
-            System.out.println("Added terminate instruction...");
+            // System.out.println("Added terminate instruction...");
             JSONObject terminateObj = new JSONObject();
             terminateObj.put("terminate", true);
             result.put(result.length(), terminateObj);
@@ -222,7 +222,7 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
 
     private static final void sendResponse(HttpExchange exchange,
             JSONArray response) throws IOException {
-        System.out.println("Sending " + response.length() + " objects...");
+        // System.out.println("Sending " + response.length() + " objects...");
         byte[] b = response.toString().getBytes();
         exchange.sendResponseHeaders(HttpURLConnection.HTTP_ACCEPTED, b.length);
         exchange.getResponseBody().write(b);
@@ -238,7 +238,7 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            System.out.println("Received result callback request...");
+            // System.out.println("Received result callback request...");
             JSONArray results;
             String[] request = exchange.getRequestURI().getQuery().split("&");
             Map<String, String> query = new HashMap<String, String>();
@@ -288,7 +288,7 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
             byte[] b = Util.readFully(exchange.getRequestBody());
             int request = Integer
                     .parseInt(new String(b, "UTF-8").split("=")[1]);
-            System.out.println("Received request to display " + request);
+            // System.out.println("Received request to display " + request);
             myResults.get(request).popup();
             exchange.sendResponseHeaders(HttpURLConnection.HTTP_ACCEPTED, 0);
             exchange.close();
