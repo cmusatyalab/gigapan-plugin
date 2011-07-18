@@ -118,7 +118,7 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
             Runtime r = Runtime.getRuntime();
             r.exec("xdg-open http://127.0.0.1:" + port);
 
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -193,6 +193,7 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
                     .extractString(r.getValue("gigapan_levels"))));
             return resultJSON;
         } catch (JSONException e) {
+            e.printStackTrace();
             return new JSONObject();
         }
     }
