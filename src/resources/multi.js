@@ -210,36 +210,46 @@ $(function() {
 		focus_gigapan(ev.data.myID);
 	    }
 	});
-
 	return img;
     }
 
-
     function get_draw_coords (object) {
-	actual_object_zoom = (CURRENT_GIGAPAN.levels - 1) - object.level;
-	height_at_zoom_level = CURRENT_GIGAPAN.height 
-	    / (Math.pow(2, actual_object_zoom));
-	width_at_zoom_level = CURRENT_GIGAPAN.width 
-	    / (Math.pow(2, actual_object_zoom));
-	
-	mid_x_coord = (256 * object.col) + 128;
-	mid_y_coord = (256 * object.row) + 128;
-	percentX = mid_x_coord / width_at_zoom_level;
-	percentY = mid_y_coord / height_at_zoom_level;
+	var real_level = (CURRENT_GIGAPAN.levels - 1) - object.level;
+	var level_height = CURRENT_GIGAPAN.height /
+	    (Math.pow(2, real_level));
+	var level_width = CURRENT_GIGAPAN.width /
+	    (Math.pow(2, real_level));
+
+	var bottom_right_x = (object.col + 1) * 256;
+	var bottom_right_y = (object.row + 1) * 256;
+	var img_width = 256;
+	var img_height = 256;
+	if (bottom_right_x > level_width) {
+            img_width = 256 - (bottom_right_x - level_width);
+	}
+	if (bottom_right_y > level_height) {
+            img_height = 256 - (bottom_right_y - level_height);
+	}
+
+
+	var mid_x_coord = (object.col * 256) + (img_width / 2);
+	var mid_y_coord = (object.row * 256) + (img_height / 2);
+	var percentX = mid_x_coord / level_width;
+	var percentY = mid_y_coord / level_height;
 
 	var height = CURRENT_GIGAPAN.drawn_height;
 	var width = CURRENT_GIGAPAN.drawn_width;
 
-	return_coord_x = Math.min((percentX * width - 10), 
-				  width - 10);
-	return_coord_y = Math.min((percentY * height - 34), 
-				  width - 34);
-	
+	var return_coord_x = Math.floor(percentX * width - (PIN_DIM[0] / 2));
+	var return_coord_y = Math.floor(percentY * height - PIN_DIM[1]);
+
 	return new Array(return_coord_x, return_coord_y);
     }
     
     $(window).resize(function() {
 	update_frame_sizes();
-	focus_gigapan(CURRENT_GIGAPAN.id);
+	if (CURRENT_GIGAPAN.id !== -1) {
+	    focus_gigapan(CURRENT_GIGAPAN.id);
+	}
     });
 });
