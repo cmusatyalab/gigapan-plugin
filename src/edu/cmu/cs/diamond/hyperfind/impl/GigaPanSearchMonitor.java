@@ -131,15 +131,6 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
             mySerialNumber++;
             myResults.notifyAll();
         }
-
-    }
-
-    @Override
-    public final void stopped() {
-        /*
-         * synchronized (myResults) { if (isRunning) { isRunning = false;
-         * myResults.notifyAll(); System.out.println("Server stopped"); } }
-         */
     }
 
     @Override
