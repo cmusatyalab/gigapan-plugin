@@ -56,7 +56,7 @@ $(function() {
     build_frames();
     poll();
 
-    function poll () {
+    function poll() {
         $.getJSON('/data', {desiredResult:LAST_RESULT_NUM,
                             serialNumber:SERIAL}, function(data) {
             for (var i = 0; i < data.length; i++) {
@@ -105,7 +105,6 @@ $(function() {
     // Draw pin on focused GigaPan
     function draw_pin(result) {
         var coords = get_draw_coords(result);
-        var index = $.inArray(result, HIGHLIGHTED_PINS);
         var imgurl = '/resources/pin.png';
         for (var i = 0; i < HIGHLIGHTED_PINS.length; i++) {
             if (HIGHLIGHTED_PINS[i].result_id === result.result_id) {
@@ -232,7 +231,7 @@ $(function() {
     }
 
     // Return a div containing a thumbnail for the specified GigaPan
-    function create_thumbnail (obj) {
+    function create_thumbnail(obj) {
         var width = 700;
         // GigaPan ignores the height
         var imgurl = "http://www.gigapan.org/gigapans/"
@@ -273,7 +272,7 @@ $(function() {
     }
 
     // Return the coordinates of a pin representing the given tile
-    function get_draw_coords (object) {
+    function get_draw_coords(object) {
         var real_level = (CURRENT_GIGAPAN.levels - 1) - object.level;
         var level_height = CURRENT_GIGAPAN.height /
             (Math.pow(2, real_level));
@@ -305,7 +304,7 @@ $(function() {
 
         return new Array(return_coord_x, return_coord_y);
     }
-    
+
     $(window).resize(function() {
         update_frame_sizes();
         if (CURRENT_GIGAPAN.id !== -1) {
