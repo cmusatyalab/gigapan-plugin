@@ -136,19 +136,21 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
         Result r = hr.getResult();
         try {
             JSONObject resultJSON = new JSONObject();
-            resultJSON.put("level",
-                    Util.extractString(r.getValue("tile_level")));
-            resultJSON.put("row", Util.extractString(r.getValue("tile_row")));
-            resultJSON.put("col", Util.extractString(r.getValue("tile_col")));
+            resultJSON.put("level", Integer.parseInt(Util.extractString(r
+                    .getValue("tile_level"))));
+            resultJSON.put("row", Integer.parseInt(Util.extractString(r
+                    .getValue("tile_row"))));
+            resultJSON.put("col", Integer.parseInt(Util.extractString(r
+                    .getValue("tile_col"))));
             resultJSON.put("result_id", myResults.indexOf(hr));
-            resultJSON.put("gigapan_id",
-                    Util.extractString(r.getValue("gigapan_id")));
-            resultJSON.put("gigapan_height",
-                    Util.extractString(r.getValue("gigapan_height")));
-            resultJSON.put("gigapan_width",
-                    Util.extractString(r.getValue("gigapan_width")));
-            resultJSON.put("gigapan_levels",
-                    Util.extractString(r.getValue("gigapan_levels")));
+            resultJSON.put("gigapan_id", Integer.parseInt(Util.extractString(r
+                    .getValue("gigapan_id"))));
+            resultJSON.put("gigapan_height", Integer.parseInt(Util
+                    .extractString(r.getValue("gigapan_height"))));
+            resultJSON.put("gigapan_width", Integer.parseInt(Util
+                    .extractString(r.getValue("gigapan_width"))));
+            resultJSON.put("gigapan_levels", Integer.parseInt(Util
+                    .extractString(r.getValue("gigapan_levels"))));
             return resultJSON;
         } catch (JSONException e) {
             return new JSONObject();
