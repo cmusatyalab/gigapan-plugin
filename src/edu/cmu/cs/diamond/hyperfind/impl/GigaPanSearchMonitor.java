@@ -317,6 +317,10 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
                         b.length);
                 exchange.getResponseBody().write(b);
                 exchange.close();
+            } else {
+                exchange.sendResponseHeaders(HttpURLConnection.HTTP_NOT_FOUND,
+                        0);
+                exchange.close();
             }
         }
     }
