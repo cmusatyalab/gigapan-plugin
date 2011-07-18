@@ -165,8 +165,8 @@ $(function() {
 
 	var height = DOCUMENT_HEIGHT;
 	var width = DOCUMENT_WIDTH;
-	var top_height = (TOP / 100) * height;
-	var bottom_height = ((100 - TOP) / 100) * height;
+	var top_height = Math.floor((TOP / 100) * height);
+	var bottom_height = Math.floor(((100 - TOP) / 100) * height);
 
 	$('#top').height(top_height);
 	for (var id in ['#bottom', '#pins', '#image']) {
