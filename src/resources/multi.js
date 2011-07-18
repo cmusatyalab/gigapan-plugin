@@ -19,6 +19,7 @@ $(function() {
 			    serialNumber:SERIAL}, function(data) {
 	    for (var i = 0; i < data.length; i++) {
 		if (data[i].terminate) {
+		    $("body").html("");
 		    window.close();
 		    return;
 		} else if (data[i].highlight) {
