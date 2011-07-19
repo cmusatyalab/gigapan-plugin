@@ -7,7 +7,7 @@
     <path id="GigaPanPlugin.classpath">
       <pathelement location="/usr/share/java/opendiamond.jar"/>
       <pathelement location="/usr/share/java/json.jar"/>
-      <pathelement location="/home/tnarayan/WorkingDirectory/hyperfind/hyperfind.jar"/>
+      <pathelement location="/usr/share/java/hyperfind.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
