@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project basedir="." default="jar" name="GigaPanSearchMonitor">
+<project basedir="." default="jar" name="GigaPanPlugin">
     <property environment="env"/>
     <property name="debuglevel" value="source,lines,vars"/>
     <property name="target" value="1.6"/>
     <property name="source" value="1.6"/>
-    <path id="GigapanSearchMonitor.classpath">
+    <path id="GigaPanPlugin.classpath">
       <pathelement location="/usr/share/java/opendiamond.jar"/>
       <pathelement location="/usr/share/java/json.jar"/>
       <pathelement location="/home/tnarayan/WorkingDirectory/hyperfind/hyperfind.jar"/>
@@ -17,16 +17,16 @@
     </target>
     <target name="clean">
       <delete dir="bin"/>
-      <delete file="gigapan-searchmonitor.jar"/>
+      <delete file="gigapan-plugin.jar"/>
     </target>
     <target name="build" depends="init">
         <echo message="${ant.project.name}: ${ant.file}"/>
         <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}" encoding="UTF-8">
 	  <src path="src"/>
-	  <classpath refid="GigapanSearchMonitor.classpath"/>
+	  <classpath refid="GigaPanPlugin.classpath"/>
 	</javac>
     </target>
     <target depends="build" name="jar">
-      <jar destfile="gigapan-searchmonitor.jar" basedir="bin"/>
+      <jar destfile="gigapan-plugin.jar" basedir="bin"/>
     </target>
 </project>
