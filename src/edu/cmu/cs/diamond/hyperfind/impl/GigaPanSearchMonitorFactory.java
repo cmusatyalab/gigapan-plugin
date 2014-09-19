@@ -23,12 +23,12 @@
  *
  *  In addition, as a special exception, the copyright holders of GigaPan
  *  Plugin give you permission to combine GigaPan Plugin with free software
- *  programs or libraries that are released under the GNU LGPL or the
- *  Eclipse Public License 1.0.  You may copy and distribute such a system
- *  following the terms of the GNU GPL for GigaPan Plugin and the licenses
- *  of the other code concerned, provided that you include the source code
- *  of that other code when and as the GNU GPL requires distribution of
- *  source code.
+ *  programs or libraries that are released under the GNU LGPL, the
+ *  Eclipse Public License 1.0, or the Apache License 2.0.  You may copy and
+ *  distribute such a system following the terms of the GNU GPL for GigaPan
+ *  Plugin and the licenses of the other code concerned, provided that you
+ *  include the source code of that other code when and as the GNU GPL
+ *  requires distribution of source code.
  *
  *  Note that people who make modified versions of GigaPan Plugin are not
  *  obligated to grant this special exception for their modified versions;
