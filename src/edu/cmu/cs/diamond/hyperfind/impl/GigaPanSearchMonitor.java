@@ -71,7 +71,6 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
     private boolean isRunning = false;
     private HttpServer myServer = null;
     private Vector<HyperFindResult> myResults;
-    private Map<HyperFindResult, Integer> myResultsReverse;
     private ExecutorService myThreadPool;
     private Vector<HyperFindResult> myHighlightedResults;
     private int mySerialNumber = 0;
@@ -81,7 +80,6 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
 
     private GigaPanSearchMonitor() {
         myResults = new Vector<HyperFindResult>();
-        myResultsReverse = new HashMap<HyperFindResult, Integer>();
         myHighlightedResults = new Vector<HyperFindResult>();
     }
 
@@ -93,7 +91,6 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
                 myThreadPool = Executors.newCachedThreadPool();
                 createWebComponent();
             }
-            myResultsReverse.put(hr, myResults.size());
             myResults.add(hr);
             myResults.notifyAll();
         }
