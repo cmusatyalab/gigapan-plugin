@@ -1,7 +1,7 @@
 /*
  *  GigaPan Plugin, a HyperFind plugin for searching GigaPan images
  *
- *  Copyright (c) 2011 Carnegie Mellon University
+ *  Copyright (c) 2011, 2014 Carnegie Mellon University
  *  All rights reserved.
  *
  *  GigaPan Plugin is free software: you can redistribute it and/or modify
@@ -85,14 +85,16 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
 
     @Override
     public final void notify(HyperFindResult hr) {
-        synchronized (myResults) {
-            if (!isRunning && hr.getResult().getValue("gigapan_id") != null) {
-                isRunning = true;
-                myThreadPool = Executors.newCachedThreadPool();
-                createWebComponent();
+        if (hr.getResult().getValue("gigapan_id") != null) {
+            synchronized (myResults) {
+                if (!isRunning) {
+                    isRunning = true;
+                    myThreadPool = Executors.newCachedThreadPool();
+                    createWebComponent();
+                }
+                myResults.add(hr);
+                myResults.notifyAll();
             }
-            myResults.add(hr);
-            myResults.notifyAll();
         }
     }
 
@@ -161,6 +163,10 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
      * that can be found in the specified list of results.
      */
     private final JSONObject createResultObject(HyperFindResult hr) {
+        int index = myResults.indexOf(hr);
+        if (index == -1) {
+            return null;
+        }
         Result r = hr.getResult();
         try {
             JSONObject resultJSON = new JSONObject();
@@ -170,7 +176,7 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
                     .getValue("tile_row"))));
             resultJSON.put("col", Integer.parseInt(Util.extractString(r
                     .getValue("tile_col"))));
-            resultJSON.put("result_id", myResults.indexOf(hr));
+            resultJSON.put("result_id", index);
             resultJSON.put("gigapan_id", Integer.parseInt(Util.extractString(r
                     .getValue("gigapan_id"))));
             resultJSON.put("gigapan_height", Integer.parseInt(Util
@@ -193,7 +199,10 @@ public class GigaPanSearchMonitor extends HyperFindSearchMonitor {
     private final JSONArray createResultObjectList(List<HyperFindResult> v) {
         Vector<JSONObject> jv = new Vector<JSONObject>();
         for (HyperFindResult hr : v) {
-            jv.add(createResultObject(hr));
+            JSONObject resultObject = createResultObject(hr);
+            if (resultObject != null) {
+                jv.add(resultObject);
+            }
         }
         return new JSONArray(jv);
     }
