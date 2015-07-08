@@ -152,7 +152,8 @@ $(function() {
         // Determine what size GigaPan to ask for based on the size of
         // the bottom pane.
         var max_x = DOCUMENT_WIDTH - PIN_DIM[0];
-        var max_y = (((100 - TOP) / 100) * DOCUMENT_HEIGHT) - PIN_DIM[1];
+        var max_y = Math.floor(((100 - TOP) / 100) * DOCUMENT_HEIGHT)
+            - PIN_DIM[1];
         // assume max_x
         var implied_y = y_from_x(CURRENT_GIGAPAN, max_x);
         if (implied_y < max_y) {
