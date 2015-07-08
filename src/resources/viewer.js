@@ -67,13 +67,13 @@ $(function() {
                 } else if (data[i].highlight) {
                     HIGHLIGHTED_PINS = data[i].highlight;
                     SERIAL = data[i].serial;
-                    $(".pin").attr('src', '/resources/pin.png');
+                    $(".pin").prop('src', '/resources/pin.png');
                     if (HIGHLIGHTED_PINS.length > 0 &&
                         CURRENT_GIGAPAN.id !== HIGHLIGHTED_PINS[0].gigapan_id) {
                         focus_gigapan(HIGHLIGHTED_PINS[0].gigapan_id);
                     }
                     for (var j = 0; j < HIGHLIGHTED_PINS.length; j++) {
-                        $("#" + HIGHLIGHTED_PINS[j].result_id).attr('src'
+                        $("#" + HIGHLIGHTED_PINS[j].result_id).prop('src'
                                         ,'/resources/pin_selected.png');
                     }
                 } else {
